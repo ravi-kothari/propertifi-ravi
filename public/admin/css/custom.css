@@ -1,0 +1,29 @@
+.error_notification{    
+	border: 1px solid #f00;
+    padding: 10px;
+    margin-bottom: 10px;
+    background-color:#FDD9DC;
+    color: #F00;
+    border-radius: 4px;
+}
+.success_toster{
+	position: absolute;
+    z-index: 999;
+    right: 0px;
+    border: 1px solid #51A351;
+    padding: 10px 20px;
+    border-radius: 4px;
+    border-shadow: 0 0 12px #999;
+    background: #51A351;
+    color: #fff; display:none; z-index:9999}
+	.error_toster{
+	position: absolute;
+    z-index: 999;
+    right: 0px;
+    border: 1px solid #BD362F;
+    padding: 10px 20px;
+    border-radius: 4px;
+    border-shadow: 0 0 12px #999;
+    background: #BD362F;
+    color: #fff;display:none; z-index:9999}
+	#top_header{ z-index:999}
