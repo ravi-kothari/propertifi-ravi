@@ -20,7 +20,7 @@ use URL;
 use Cookie;
 use Illuminate\Validation\Rule;
 use Illuminate\Support\Str;
-use App\Models\Leads;
+use App\Models\Lead;
 use App\Models\Credits;
 use App\Models\User;
 use App\Mail\OrderMail;
@@ -44,7 +44,7 @@ class AdminController extends Controller
 	public function __construct(){
 		self::$UserModel = new AdminUser();
         self::$TokenHelper = new TokenHelper();
-		self::$Leads = new Leads();
+		self::$Leads = new Lead();
 		self::$Credits = new Credits();
 		self::$User = new User();
 		self::$State = new State();

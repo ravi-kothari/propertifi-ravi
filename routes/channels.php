@@ -16,3 +16,8 @@ use Illuminate\Support\Facades\Broadcast;
 Broadcast::channel('App.Models.User.{id}', function ($user, $id) {
     return (int) $user->id === (int) $id;
 });
+
+// Property Manager Private Channel for Lead Notifications
+Broadcast::channel('property-manager.{pmId}', function ($user, $pmId) {
+    return (int) $user->id === (int) $pmId;
+});

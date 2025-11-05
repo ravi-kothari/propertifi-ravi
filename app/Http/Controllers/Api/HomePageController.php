@@ -15,7 +15,7 @@ use App\Models\Questions;
 use App\RouteHelper;
 use App\Models\TokenHelper;
 use App\Models\Responses;
-use App\Models\Leads;
+use App\Models\Lead;
 use App\Models\Newsletters;
 use ReallySimpleJWT\Token;
 use Illuminate\Http\Request;
@@ -51,7 +51,7 @@ class HomePageController extends Controller
 	public function __construct(){
 		self::$Blogs = new Blogs();
         self::$TokenHelper = new TokenHelper();
-		self::$Leads = new Leads();
+		self::$Leads = new Lead();
 		self::$Newsletters = new Newsletters();
 		self::$Testimonials = new Testimonials();
 		self::$State = new State();

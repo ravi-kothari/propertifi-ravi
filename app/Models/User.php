@@ -8,9 +8,17 @@ use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 use Laravel\Sanctum\HasApiTokens;
 
-class User extends Authenticatable
+class User extends Authenticatable implements MustVerifyEmail
 {
     use HasApiTokens, HasFactory, Notifiable;
+
+    /**
+     * User role constants
+     */
+    const TYPE_OWNER = 'owner';
+    const TYPE_PM = 'pm';
+    const TYPE_ADMIN = 'admin';
+    const TYPE_USER = 'User'; // Default type
 
     /**
      * The attributes that are mass assignable.
@@ -61,7 +69,10 @@ class User extends Authenticatable
 		'slug',
 		'seo_title',
 		'seo_description',
-		'seo_keywords'
+		'seo_keywords',
+		'is_verified',
+		'verification_documents',
+		'verified_at'
     ];
 
     /**
@@ -71,6 +82,7 @@ class User extends Authenticatable
      */
     protected $hidden = [
         'password',
+        'remember_token',
     ];
 
     /**
@@ -80,6 +92,9 @@ class User extends Authenticatable
      */
     protected $casts = [
         'email_verified_at' => 'datetime',
+        'is_verified' => 'boolean',
+        'verification_documents' => 'array',
+        'verified_at' => 'datetime',
     ];
 
 	public function GetRecordById($id){
@@ -104,6 +119,22 @@ class User extends Authenticatable
 		return $this::where('email',$email)->where('id','!=', $id)->where('status','!=', 3)->exists();
 	}
 
+    /**
+     * Get the user's preferences.
+     */
+    public function preferences()
+    {
+        return $this->hasOne(\App\Models\UserPreferences::class);
+    }
+
+    /**
+     * Get the leads assigned to this user.
+     */
+    public function assignedLeads()
+    {
+        return $this->hasMany(\App\Models\UserLead::class);
+    }
+
     public function getUsersNames($ids){
         $user_name = 'N/A';
 		$userIDs = explode(',',$ids);
@@ -121,5 +152,125 @@ class User extends Authenticatable
             }
         }
         return $user_name;
+    }
+
+    /**
+     * Check if user is a property manager.
+     */
+    public function isPropertyManager()
+    {
+        return $this->type === self::TYPE_PM;
+    }
+
+    /**
+     * Check if user is an owner.
+     */
+    public function isOwner()
+    {
+        return $this->type === self::TYPE_OWNER;
+    }
+
+    /**
+     * Check if user is an admin.
+     */
+    public function isAdmin()
+    {
+        return $this->type === self::TYPE_ADMIN;
+    }
+
+    /**
+     * Check if user has a specific type.
+     */
+    public function hasType($type)
+    {
+        return $this->type === $type;
+    }
+
+    /**
+     * Get the role associated with the user.
+     */
+    public function role()
+    {
+        return $this->belongsTo(Roles::class, 'role_id');
+    }
+
+    /**
+     * Check if user has a specific permission.
+     *
+     * @param string $permission
+     * @return bool
+     */
+    public function hasPermission($permission)
+    {
+        // Admin and AccountManager have all permissions
+        if ($this->isAdmin() || $this->type === 'AccountManager') {
+            return true;
+        }
+
+        if (!$this->role) {
+            return false;
+        }
+
+        return $this->role->hasPermission($permission);
+    }
+
+    /**
+     * Check if user has any of the given permissions.
+     *
+     * @param array $permissions
+     * @return bool
+     */
+    public function hasAnyPermission(array $permissions)
+    {
+        // Admin and AccountManager have all permissions
+        if ($this->isAdmin() || $this->type === 'AccountManager') {
+            return true;
+        }
+
+        if (!$this->role) {
+            return false;
+        }
+
+        return $this->role->hasAnyPermission($permissions);
+    }
+
+    /**
+     * Check if user has all of the given permissions.
+     *
+     * @param array $permissions
+     * @return bool
+     */
+    public function hasAllPermissions(array $permissions)
+    {
+        // Admin and AccountManager have all permissions
+        if ($this->isAdmin() || $this->type === 'AccountManager') {
+            return true;
+        }
+
+        if (!$this->role) {
+            return false;
+        }
+
+        return $this->role->hasAllPermissions($permissions);
+    }
+
+    /**
+     * Check if user can manage users.
+     *
+     * @return bool
+     */
+    public function canManageUsers()
+    {
+        return $this->hasPermission('manage_users');
+    }
+
+    /**
+     * Check if user can manage roles.
+     *
+     * @return bool
+     */
+    public function canManageRoles()
+    {
+        return $this->hasPermission('manage_roles');
     }
 }

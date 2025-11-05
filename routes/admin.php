@@ -18,6 +18,7 @@ use App\Http\Controllers\Admin\FaqsController;
 use App\Http\Controllers\Admin\StripePaymentController;
 use App\Http\Controllers\Admin\TiersController;
 use App\Http\Controllers\Admin\QuestionsController;
+use App\Http\Controllers\Admin\QuestionController;
 use App\Http\Controllers\Admin\NewsletterController;
 use App\Http\Controllers\Admin\RolesController;
 use App\Http\Controllers\Admin\AccountManagerController;
@@ -26,6 +27,8 @@ use App\Http\Controllers\Admin\UsersController;
 use App\Http\Controllers\Admin\AgentRolesController;
 use App\Http\Controllers\Admin\BlogCategoryController;
 use App\Http\Controllers\Admin\CitiesController;
+use App\Http\Controllers\Admin\StateLawController;
+use App\Http\Controllers\Admin\DocumentTemplateController;
 
 
 /*
@@ -192,8 +195,24 @@ Route::prefix('admin')->group(function () {
 	Route::get('stripe/checkout/success', [StripePaymentController::class, 'stripeCheckoutSuccess'])->name('stripe.checkout.success');
 	
 	Route::get('lead/distribute', [CronController::class, 'leadDistribute']);
-	
-	
+
+	// Multi-step form questions management (RESTful API)
+	Route::get('/form-questions', [QuestionController::class, 'index'])->name('admin.form-questions.index');
+	Route::post('/form-questions', [QuestionController::class, 'store'])->name('admin.form-questions.store');
+	Route::get('/form-questions/{id}', [QuestionController::class, 'show'])->name('admin.form-questions.show');
+	Route::put('/form-questions/{id}', [QuestionController::class, 'update'])->name('admin.form-questions.update');
+	Route::delete('/form-questions/{id}', [QuestionController::class, 'destroy'])->name('admin.form-questions.destroy');
+	Route::post('/form-questions/reorder', [QuestionController::class, 'reorder'])->name('admin.form-questions.reorder');
+
+    Route::resource('laws', StateLawController::class)->names('admin.laws');
+    Route::resource('templates', DocumentTemplateController::class)->names('admin.templates');
+
+    // PM Verification Routes
+    Route::get('/users/{userId}/verification', [UsersController::class, 'showVerification'])->name('admin.users.verification');
+    Route::post('/users/{userId}/verification', [UsersController::class, 'updateVerification'])->name('admin.users.verification.update');
+    Route::post('/users/{userId}/verification/upload', [UsersController::class, 'uploadVerificationDocument'])->name('admin.users.verification.upload');
+    Route::delete('/users/{userId}/verification/documents/{documentIndex}', [UsersController::class, 'deleteVerificationDocument'])->name('admin.users.verification.delete');
+    Route::get('/users/{userId}/verification/documents/{documentIndex}', [UsersController::class, 'downloadVerificationDocument'])->name('admin.users.verification.download');
 });
 
 Route::middleware('auth:sanctum')->get('/user', function (Request $request) {

@@ -1,0 +1,72 @@
+version: '3.8'
+
+# Docker Compose configuration for E2E testing environment
+# This file sets up isolated services for testing to avoid conflicts with development
+
+services:
+  # Test MySQL Database (separate from dev)
+  db-test:
+    image: mysql:8.0
+    container_name: propertifi_mysql_test
+    restart: unless-stopped
+    environment:
+      MYSQL_DATABASE: propertifi_test
+      MYSQL_USER: propertifi_test
+      MYSQL_PASSWORD: test_password
+      MYSQL_ROOT_PASSWORD: root_test_password
+    ports:
+      - "33061:3306"  # Different port to avoid conflicts
+    volumes:
+      - mysql_test_data:/var/lib/mysql
+    networks:
+      - propertifi_test_network
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "root", "-proot_test_password"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # Test Redis Cache
+  redis-test:
+    image: redis:7-alpine
+    container_name: propertifi_redis_test
+    restart: unless-stopped
+    ports:
+      - "6380:6379"  # Different port
+    volumes:
+      - redis_test_data:/data
+    networks:
+      - propertifi_test_network
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # MailHog for testing emails (can reuse or use separate instance)
+  mailhog-test:
+    image: mailhog/mailhog
+    container_name: propertifi_mailhog_test
+    restart: unless-stopped
+    ports:
+      - "1026:1025"  # SMTP - different port
+      - "8026:8025"  # Web UI - different port
+    networks:
+      - propertifi_test_network
+
+volumes:
+  mysql_test_data:
+    driver: local
+  redis_test_data:
+    driver: local
+
+networks:
+  propertifi_test_network:
+    driver: bridge
+
+
+
+
+
+
+

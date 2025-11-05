@@ -220,4 +220,135 @@ class UsersController extends Controller
         }
     }
 
+    /**
+     * Display verification interface for a PM
+     */
+    public function showVerification(Request $request, $userId)
+    {
+        if(!$request->session()->has('admin_email')){
+            return redirect('/admin/');
+        }
+
+        $user = User::findOrFail($userId);
+
+        return view('admin.users.verification', compact('user'));
+    }
+
+    /**
+     * Update verification status
+     */
+    public function updateVerification(Request $request, $userId)
+    {
+        if(!$request->session()->has('admin_email')){
+            return redirect('/admin/');
+        }
+
+        $validator = Validator::make($request->all(), [
+            'is_verified' => 'required|boolean'
+        ]);
+
+        if($validator->fails()){
+            return redirect()->back()->with('error', $validator->errors()->first());
+        }
+
+        $user = User::findOrFail($userId);
+
+        $user->update([
+            'is_verified' => $request->is_verified,
+            'verified_at' => $request->is_verified ? now() : null
+        ]);
+
+        return redirect()->back()->with('success', 'Verification status updated successfully.');
+    }
+
+    /**
+     * Upload verification document
+     */
+    public function uploadVerificationDocument(Request $request, $userId)
+    {
+        $validator = Validator::make($request->all(), [
+            'document' => 'required|file|mimes:pdf,jpg,jpeg,png|max:5120' // 5MB max
+        ]);
+
+        if($validator->fails()){
+            return response()->json([
+                'success' => false,
+                'message' => $validator->errors()->first()
+            ], 422);
+        }
+
+        $user = User::findOrFail($userId);
+
+        // Store document in storage/app/verification-documents
+        $path = $request->file('document')->store('verification-documents');
+
+        // Add to verification_documents array
+        $documents = $user->verification_documents ?? [];
+        $documents[] = [
+            'path' => $path,
+            'original_name' => $request->file('document')->getClientOriginalName(),
+            'uploaded_at' => now()->toDateTimeString(),
+            'uploaded_by' => $request->session()->get('admin_id')
+        ];
+
+        $user->update(['verification_documents' => $documents]);
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Document uploaded successfully',
+            'document' => end($documents)
+        ]);
+    }
+
+    /**
+     * Delete verification document
+     */
+    public function deleteVerificationDocument(Request $request, $userId, $documentIndex)
+    {
+        $user = User::findOrFail($userId);
+        $documents = $user->verification_documents ?? [];
+
+        if(isset($documents[$documentIndex])){
+            // Delete file from storage
+            if(file_exists(storage_path('app/' . $documents[$documentIndex]['path']))){
+                unlink(storage_path('app/' . $documents[$documentIndex]['path']));
+            }
+
+            // Remove from array
+            unset($documents[$documentIndex]);
+            $documents = array_values($documents); // Re-index array
+
+            $user->update(['verification_documents' => $documents]);
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Document deleted successfully'
+            ]);
+        }
+
+        return response()->json([
+            'success' => false,
+            'message' => 'Document not found'
+        ], 404);
+    }
+
+    /**
+     * Download verification document
+     */
+    public function downloadVerificationDocument(Request $request, $userId, $documentIndex)
+    {
+        $user = User::findOrFail($userId);
+        $documents = $user->verification_documents ?? [];
+
+        if(isset($documents[$documentIndex])){
+            $filePath = storage_path('app/' . $documents[$documentIndex]['path']);
+
+            if(file_exists($filePath)){
+                return response()->download($filePath, $documents[$documentIndex]['original_name']);
+            }
+        }
+
+        return redirect()->back()->with('error', 'Document not found');
+    }
+
 }
